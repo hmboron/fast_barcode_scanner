@@ -1,7 +1,11 @@
+import 'dart:ui';
+
 import 'package:fast_barcode_scanner/fast_barcode_scanner.dart';
+import 'package:fast_barcode_scanner/src/camera_controller.dart';
 import 'package:fast_barcode_scanner_platform_interface/fast_barcode_scanner_platform_interface.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 typedef ErrorCallback = Widget Function(BuildContext context, Object? error);
@@ -20,27 +24,29 @@ Widget _defaultOnError(BuildContext context, Object? error) {
 
 /// The main class connecting the platform code to the UI.
 ///
-/// This class connects to the camera as soon as `didChangeDependencies` gets called.
+/// This class is used in the widget tree and connects to the camera
+/// as soon as didChangeDependencies gets called.
 class BarcodeCamera extends StatefulWidget {
   const BarcodeCamera({
-    super.key,
+    Key? key,
     required this.types,
-    this.mode = PerformanceMode.system,
-    this.detectionMode = DetectionMode.pauseVideo,
+    this.mode = DetectionMode.pauseVideo,
+    this.resolution = Resolution.hd720,
+    this.framerate = Framerate.fps30,
     this.position = CameraPosition.back,
-    this.api = const ApiMode(),
     this.onScan,
     this.children = const [],
     this.dispose = true,
     ErrorCallback? onError,
-  }) : onError = onError ?? _defaultOnError;
+  })  : onError = onError ?? _defaultOnError,
+        super(key: key);
 
   final List<BarcodeType> types;
-  final PerformanceMode mode;
-  final DetectionMode detectionMode;
+  final Resolution resolution;
+  final Framerate framerate;
+  final DetectionMode mode;
   final CameraPosition position;
-  final ApiMode api;
-  final OnDetectionHandler? onScan;
+  final void Function(Barcode)? onScan;
   final List<Widget> children;
   final ErrorCallback onError;
   final bool dispose;
@@ -53,42 +59,33 @@ class BarcodeCameraState extends State<BarcodeCamera> {
   var _opacity = 0.0;
   var showingError = false;
 
-  final cameraController = CameraController.shared;
+  final cameraController = CameraController();
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final configurationFuture = cameraController.state.value.isInitialized
+    final configurationFuture = cameraController.state.isInitialized
         ? cameraController.configure(
             types: widget.types,
-            mode: widget.mode,
+            resolution: widget.resolution,
+            framerate: widget.framerate,
             position: widget.position,
-            onScan: widget.onScan,
-          )
-        : cameraController.initialize(
-            types: widget.types,
-            mode: widget.mode,
-            position: widget.position,
-            detectionMode: widget.detectionMode,
-            onScan: widget.onScan,
-            api: widget.api,
-          );
+            onScan: widget.onScan)
+        : cameraController.initialize(widget.types, widget.resolution,
+            widget.framerate, widget.position, widget.mode, widget.onScan);
 
     configurationFuture
         .whenComplete(() => setState(() => _opacity = 1.0))
         .onError((error, stackTrace) => setState(() => showingError = true));
 
-    cameraController.eventNotifier.addListener(onScannerEvent);
+    cameraController.events.addListener(onScannerEvent);
   }
 
   void onScannerEvent() {
-    if (!mounted) return;
-
-    if (cameraController.eventNotifier.value != ScannerEvent.error &&
-        showingError) {
+    if (cameraController.events.value != ScannerEvent.error && showingError) {
       setState(() => showingError = false);
-    } else if (cameraController.eventNotifier.value == ScannerEvent.error) {
+    } else if (cameraController.events.value == ScannerEvent.error) {
       setState(() => showingError = true);
     }
   }
@@ -101,65 +98,49 @@ class BarcodeCameraState extends State<BarcodeCamera> {
       cameraController.pauseCamera();
     }
 
-    cameraController.eventNotifier.removeListener(onScannerEvent);
-
+    cameraController.events.removeListener(onScannerEvent);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cameraState = cameraController.state.value;
-
+    final cameraState = cameraController.state;
     return ColoredBox(
       color: Colors.black,
       child: AnimatedOpacity(
         opacity: _opacity,
-        duration: const Duration(milliseconds: 250),
-        child: cameraController.eventNotifier.value == ScannerEvent.error
+        duration: const Duration(milliseconds: 260),
+        child: cameraController.events.value == ScannerEvent.error
             ? widget.onError(
                 context,
-                cameraState.error ?? "Unknown error occurred",
+                cameraState.error ?? "Unknown error occured",
               )
             : Stack(
                 fit: StackFit.expand,
                 children: [
                   if (cameraState.isInitialized)
-                    _CameraPreview(
-                        cameraInformation: cameraState.cameraInformation!),
+                    _buildPreview(cameraState.previewConfig!),
                   ...widget.children
                 ],
               ),
       ),
     );
   }
-}
 
-class _CameraPreview extends StatelessWidget {
-  const _CameraPreview({required this.cameraInformation});
-
-  final CameraInformation cameraInformation;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildPreview(PreviewConfiguration config) {
     return FittedBox(
       fit: BoxFit.cover,
-      clipBehavior: Clip.hardEdge,
       child: SizedBox(
-        width: cameraInformation.videoSize.height, // rotate to portrait
-        height: cameraInformation.videoSize.width,
+        width: config.width.toDouble(),
+        height: config.height.toDouble(),
         child: Builder(
           builder: (_) {
             switch (defaultTargetPlatform) {
-              // https://docs.flutter.dev/platform-integration/android/platform-views#texturelayerhybridcompisition
               case TargetPlatform.android:
-                return const AndroidView(
-                  viewType: "fast_barcode_scanner.preview",
-                  creationParamsCodec: StandardMessageCodec(),
+                return Texture(
+                  textureId: config.textureId,
+                  filterQuality: FilterQuality.none,
                 );
-              // return Texture(
-              //   textureId: config.textureId,
-              //   filterQuality: FilterQuality.none,
-              // );
               case TargetPlatform.iOS:
                 return const UiKitView(
                   viewType: "fast_barcode_scanner.preview",

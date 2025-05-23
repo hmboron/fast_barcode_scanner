@@ -1,0 +1,98 @@
+{
+  "roots": [
+    "fast_barcode_scanner_example"
+  ],
+  "packages": [
+    {
+      "name": "fast_barcode_scanner_example",
+      "version": "0.0.0",
+      "dependencies": [
+        "fast_barcode_scanner",
+        "flutter"
+      ],
+      "devDependencies": [
+        "flutter_lints"
+      ]
+    },
+    {
+      "name": "flutter_lints",
+      "version": "1.0.4",
+      "dependencies": [
+        "lints"
+      ]
+    },
+    {
+      "name": "fast_barcode_scanner",
+      "version": "2.0.0-dev.2",
+      "dependencies": [
+        "fast_barcode_scanner_platform_interface",
+        "flutter"
+      ]
+    },
+    {
+      "name": "flutter",
+      "version": "0.0.0",
+      "dependencies": [
+        "characters",
+        "collection",
+        "material_color_utilities",
+        "meta",
+        "sky_engine",
+        "vector_math"
+      ]
+    },
+    {
+      "name": "fast_barcode_scanner_platform_interface",
+      "version": "2.0.0-dev.2",
+      "dependencies": [
+        "flutter",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "vector_math",
+      "version": "2.1.4",
+      "dependencies": []
+    },
+    {
+      "name": "sky_engine",
+      "version": "0.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "meta",
+      "version": "1.16.0",
+      "dependencies": []
+    },
+    {
+      "name": "material_color_utilities",
+      "version": "0.11.1",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "collection",
+      "version": "1.19.1",
+      "dependencies": []
+    },
+    {
+      "name": "characters",
+      "version": "1.4.0",
+      "dependencies": []
+    },
+    {
+      "name": "lints",
+      "version": "1.0.1",
+      "dependencies": []
+    },
+    {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "dependencies": [
+        "meta"
+      ]
+    }
+  ],
+  "configVersion": 1
+}

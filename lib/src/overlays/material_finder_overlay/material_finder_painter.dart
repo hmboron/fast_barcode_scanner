@@ -1,34 +1,46 @@
-import 'package:fast_barcode_scanner/src/overlays/rect_of_interest.dart';
+import 'package:fast_barcode_scanner/fast_barcode_scanner.dart';
 import 'package:flutter/material.dart';
 
-import '../../../fast_barcode_scanner.dart';
-
-/// The MaterialFinderPainter draws a box around the [rectOfInterest] as well as
-/// an optional "scan line" as a guide for the user to locate the desired code
-/// to scan.
 class MaterialFinderPainter extends CustomPainter {
   MaterialFinderPainter({
-    required this.borderPaint,
-    required this.backgroundColor,
-    required this.rectOfInterest,
     this.inflate = 0.0,
     this.opacity = 1.0,
     this.sensingColor = Colors.white,
+    this.drawBackground = true,
+    required this.borderPaint,
+    required this.backgroundColor,
+    required this.cutOutShape,
   });
 
   final double inflate;
   final double opacity;
   final Color sensingColor;
+  final bool drawBackground;
   final Paint borderPaint;
-  final Color? backgroundColor;
-  final RectOfInterest rectOfInterest;
+  final Color backgroundColor;
+  final CutOutShape cutOutShape;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final backgroundPaint = Paint()..color = backgroundColor;
+
     final screenRect = Rect.fromLTWH(0, 0, size.width, size.height);
 
+    final cutOutWidth = screenRect.width - 45;
+
+    double cutOutHeight;
+    if (cutOutShape == CutOutShape.square) {
+      cutOutHeight = cutOutWidth;
+    } else {
+      cutOutHeight = 1 / (16 / 9) * cutOutWidth;
+    }
+
     final cutOut = RRect.fromRectXY(
-      rectOfInterest.rect(screenRect),
+      Rect.fromCenter(
+        center: screenRect.center,
+        width: cutOutWidth,
+        height: cutOutHeight,
+      ),
       12,
       12,
     );
@@ -38,8 +50,7 @@ class MaterialFinderPainter extends CustomPainter {
       borderPaint.strokeWidth = 5 - 4 * inflate;
     }
 
-    if (backgroundColor != null) {
-      final backgroundPaint = Paint()..color = backgroundColor!;
+    if (drawBackground) {
       final cutOutPath = Path.combine(
         PathOperation.difference,
         Path()..addRect(screenRect),
@@ -67,6 +78,7 @@ class MaterialFinderPainter extends CustomPainter {
         oldDelegate.inflate != inflate ||
         oldDelegate.sensingColor != sensingColor ||
         oldDelegate.borderPaint != borderPaint ||
-        oldDelegate.backgroundColor != backgroundColor;
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.cutOutShape != cutOutShape;
   }
 }

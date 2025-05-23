@@ -1,85 +1,74 @@
 import PhotosUI
 
-@MainActor
 protocol ImagePicker {
-  func show(over viewController: UIViewController) async -> UIImage?
+    typealias ResultHandler = (UIImage?) -> Void
+
+    var resultHandler: ResultHandler { get }
+
+    func show(over viewController: UIViewController)
 }
 
 @available(iOS 14, *)
 class PHImagePicker: ImagePicker, PHPickerViewControllerDelegate {
 
-  private var continuation: CheckedContinuation<UIImage?, Never>?
+    let resultHandler: ResultHandler
 
-  func show(over viewController: UIViewController) async -> UIImage? {
-    var configuration = PHPickerConfiguration(photoLibrary: .shared())
-    configuration.filter = .images
-    configuration.preferredAssetRepresentationMode = .current
-
-    let picker = PHPickerViewController(configuration: configuration)
-    picker.delegate = self
-
-    return await withCheckedContinuation { continuation in
-      self.continuation = continuation
-      viewController.present(picker, animated: true)
-    }
-  }
-
-  func show(over viewController: UIViewController) {
-    var configuration = PHPickerConfiguration(photoLibrary: .shared())
-    configuration.filter = .images
-    configuration.preferredAssetRepresentationMode = .current
-
-    let picker = PHPickerViewController(configuration: configuration)
-    picker.delegate = self
-    viewController.present(picker, animated: true)
-  }
-
-  func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-    picker.dismiss(animated: true)
-
-    guard let itemProvider = results.first?.itemProvider,
-      itemProvider.canLoadObject(ofClass: UIImage.self)
-    else {
-      continuation?.resume(returning: nil)
-      return
+    init(resultHandler: @escaping ResultHandler) {
+        self.resultHandler = resultHandler
     }
 
-    itemProvider.loadObject(ofClass: UIImage.self) { object, error in
-      guard error == nil else {
-        print("Error loading object \(error!)")
-        self.continuation?.resume(returning: nil)
-        return
-      }
+    func show(over viewController: UIViewController) {
+        var configuration = PHPickerConfiguration(photoLibrary: .shared())
+        configuration.filter = .images
+        configuration.preferredAssetRepresentationMode = .current
 
-      self.continuation?.resume(returning: object as? UIImage)
+        let picker = PHPickerViewController(configuration: configuration)
+        picker.delegate = self
+        viewController.present(picker, animated: true)
     }
-  }
+
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+
+        guard let itemProvider = results.first?.itemProvider,
+           itemProvider.canLoadObject(ofClass: UIImage.self) else {
+            resultHandler(nil)
+            return
+        }
+
+        itemProvider.loadObject(ofClass: UIImage.self) { object, error in
+            guard error == nil else {
+                print("Error loading object \(error!)")
+                self.resultHandler(nil)
+                return
+            }
+
+            self.resultHandler(object as? UIImage)
+        }
+    }
 }
 
-class UIImagePicker: NSObject, ImagePicker, UIImagePickerControllerDelegate,
-  UINavigationControllerDelegate
-{
-  private var continuation: CheckedContinuation<UIImage?, Never>?
+class UIImagePicker: NSObject, ImagePicker, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 
-  func show(over viewController: UIViewController) async -> UIImage? {
-    let picker = UIImagePickerController()
-    picker.delegate = self
-    return await withCheckedContinuation { continuation in
-      self.continuation = continuation
-      viewController.present(picker, animated: true)
+    init(resultHandler: @escaping ResultHandler) {
+        self.resultHandler = resultHandler
     }
-  }
 
-  func imagePickerController(
-    _ picker: UIImagePickerController,
-    didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-  ) {
-    picker.dismiss(animated: true)
-    continuation?.resume(returning: info[.originalImage] as? UIImage)
-  }
+    var resultHandler: ResultHandler
 
-  func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-    picker.dismiss(animated: true)
-    continuation?.resume(returning: nil)
-  }
+    func show(over viewController: UIViewController) {
+        let picker = UIImagePickerController()
+        picker.delegate = self
+        viewController.present(picker, animated: true)
+    }
+
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+        picker.dismiss(animated: true)
+        resultHandler(info[.originalImage] as? UIImage)
+    }
+
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
+        resultHandler(nil)
+    }
 }

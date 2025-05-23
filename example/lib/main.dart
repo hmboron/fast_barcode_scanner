@@ -1,5 +1,6 @@
 import 'package:fast_barcode_scanner/fast_barcode_scanner.dart';
 import 'package:fast_barcode_scanner_example/utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,7 +11,7 @@ void main() {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -30,49 +31,47 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             ElevatedButton(
               child: const Text('Open Scanner'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ScanningScreen(dispose: _disposeCheckboxValue),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ScanningScreen(
+                    dispose: _disposeCheckboxValue,
                   ),
-                );
-              },
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () async {
+                final cam = CameraController();
+
                 final dialog = SimpleDialog(
                   children: [
                     SimpleDialogOption(
-                      child: const Text('Scan sample image'),
-                      onPressed: () => Navigator.pop(context, 'sample'),
+                      child: const Text('Choose image'),
+                      onPressed: () => Navigator.pop(context, 1),
                     ),
                     SimpleDialogOption(
                       child: const Text('Open Picker'),
-                      onPressed: () => Navigator.pop(context, 'picker'),
+                      onPressed: () => Navigator.pop(context, 2),
                     )
                   ],
                 );
 
-                final result = await showDialog<String>(
+                final result = await showDialog<int>(
                     context: context, builder: (_) => dialog);
 
                 final ImageSource source;
-                if (result == 'sample') {
+                if (result == 1) {
                   final bytes = await rootBundle.load('assets/barcodes.png');
                   source = ImageSource.binary(bytes);
-                } else if (result == 'picker') {
+                } else if (result == 2) {
                   source = ImageSource.picker();
                 } else {
                   return;
                 }
 
                 try {
-                  final barcodes =
-                      await CameraController.shared.scanImage(source);
-
-                  if (!context.mounted) return;
+                  final barcodes = await cam.scanImage(source);
 
                   showDialog(
                     context: context,
@@ -92,15 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       return SimpleDialog(
                         title: const Text('Result'),
-                        children: [
-                          Image.asset("assets/barcodes.png"),
-                          ...children
-                        ],
+                        children: children,
                       );
                     },
                   );
                 } catch (error, stack) {
-                  if (!context.mounted) return;
                   presentErrorAlert(context, error, stack);
                 }
               },
@@ -109,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Dispose CameraController with BarcodeCamera'),
+                const Text('Dispose:'),
                 Checkbox(
                   value: _disposeCheckboxValue,
                   onChanged: (newValue) => setState(

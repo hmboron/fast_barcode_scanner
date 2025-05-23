@@ -10,7 +10,6 @@ It provides a live preview widget you can put anywhere in your widget tree with 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/jhoogstraat)
 
 ## Installation
-
 **This plugin required iOS 11.0 and Android API level 21 or higher.**
 
 Add the following line to your **pubspec.yaml**:
@@ -33,10 +32,8 @@ Add the `NSCameraUsageDescription` key to your `ios/Runner/Info.plist`, like so:
 Change the minimum Android api level to 21 (or higher) in your `android/app/build.gradle` file.
 
 ```
-minSdkVersion 23
+minSdkVersion 21
 ```
-
-Update the AGP (Android Gradle Plugin) to version 8.4 or higher, to avoid issues with the latest CameraX beta. Use the upgrade assistant in Android Studio for that.
 
 ## Usage
 

@@ -6,7 +6,8 @@ import 'package:fast_barcode_scanner_platform_interface/fast_barcode_scanner_pla
 class ScannerConfiguration {
   const ScannerConfiguration(
     this.types,
-    this.mode,
+    this.resolution,
+    this.framerate,
     this.position,
     this.detectionMode,
   );
@@ -16,8 +17,17 @@ class ScannerConfiguration {
   /// If a barcode type is not in this list, it will not be detected.
   final List<BarcodeType> types;
 
-  /// The target mode of the camera.
-  final PerformanceMode mode;
+  /// The target resolution of the camera feed.
+  ///
+  /// This is experimental, but functional. Should not be set higher
+  /// than necessary.
+  final Resolution resolution;
+
+  /// The target framerate of the camera feed.
+  ///
+  /// This is experimental, but functional on iOS. Should not be set higher
+  /// than necessary.
+  final Framerate framerate;
 
   /// The physical position of the camera being used.
   final CameraPosition position;
@@ -27,13 +37,15 @@ class ScannerConfiguration {
 
   ScannerConfiguration copyWith({
     List<BarcodeType>? types,
-    PerformanceMode? mode,
+    Resolution? resolution,
+    Framerate? framerate,
     DetectionMode? detectionMode,
     CameraPosition? position,
   }) {
     return ScannerConfiguration(
       types ?? this.types,
-      mode ?? this.mode,
+      resolution ?? this.resolution,
+      framerate ?? this.framerate,
       position ?? this.position,
       detectionMode ?? this.detectionMode,
     );
