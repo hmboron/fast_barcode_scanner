@@ -2,7 +2,7 @@ group 'com.jhoogstraat.fast_barcode_scanner'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.5.30'
+    ext.kotlin_version = '1.9.25'
     repositories {
         google()
         mavenCentral()
@@ -25,14 +25,15 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 31
+    namespace 'com.jhoogstraat.fast_barcode_scanner'
+    compileSdkVersion 35
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 28
     }
 }
 
